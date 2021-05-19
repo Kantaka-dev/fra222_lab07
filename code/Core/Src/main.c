@@ -50,12 +50,22 @@ UART_HandleTypeDef huart2;
 uint64_t _micros = 0;
 
 float EncoderVel = 0;
+float EncoderRPM = 0;
 
 #define  SettlingPercent 0.04 //+-2%
 float 	 EncoderVel_SettlingCompare = 0;
-uint64_t EncoderVelRead_SettingTime = 0;
+uint64_t EncoderVel_ReadSettingTime = 0;
 
 uint64_t Timestamp_Encoder = 0;
+
+uint8_t  OnOff = 0; //default Off
+float 	 EncoderRPM_Ref = 15;
+uint16_t PWMOut = 0;
+
+float PID_Error = 0;
+float PID_KP = 0;
+float PID_KI = 0;
+float PID_KD = 0;
 
 /* USER CODE END PV */
 
@@ -138,10 +148,12 @@ int main(void)
 				((EncoderVel_SettlingCompare - EncoderVel) > EncoderVel_SettlingCompare*SettlingPercent))
 			{
 				EncoderVel_SettlingCompare = EncoderVel;
-				EncoderVelRead_SettingTime = micros();
+				EncoderVel_ReadSettingTime = micros();
 			}
-		}
 
+			//change pulse/s to RPM
+			EncoderRPM = EncoderVel *60.0 /3072.0;
+		}
 	}
 	/* USER CODE END 3 */
 }
@@ -394,7 +406,7 @@ float EncoderVelocity_Update()
 	EncoderLastTimestamp = EncoderNowTimestamp;
 
 	//Calculate velocity
-	//EncoderTimeDiff is in uS
+	//EncoderTimeDiff in Pulse/s
 	return (EncoderPositionDiff * 1000000) / (float) EncoderTimeDiff;
 
 }
