@@ -46,9 +46,17 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
 uint64_t _micros = 0;
+
 float EncoderVel = 0;
+
+#define  SettlingPercent 0.04 //+-2%
+float 	 EncoderVel_SettlingCompare = 0;
+uint64_t EncoderVelRead_SettingTime = 0;
+
 uint64_t Timestamp_Encoder = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -119,14 +127,20 @@ int main(void)
 //			EncoderVel = EncoderVelocity_Update();
 //		}
 
+		//Add Simple Low-pass filter
+		if (micros() - Timestamp_Encoder >= 100)
+		{
+			Timestamp_Encoder = micros();
+			EncoderVel = (EncoderVel * 599 + EncoderVelocity_Update()) / 600.0;
 
-
-		//Add LPF?
-//		if (micros() - Timestamp_Encoder >= 100)
-//		{
-//			Timestamp_Encoder = micros();
-//			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
-//		}
+			//check the low-pass filter delay period
+			if (((EncoderVel - EncoderVel_SettlingCompare) > EncoderVel_SettlingCompare*SettlingPercent) ||
+				((EncoderVel_SettlingCompare - EncoderVel) > EncoderVel_SettlingCompare*SettlingPercent))
+			{
+				EncoderVel_SettlingCompare = EncoderVel;
+				EncoderVelRead_SettingTime = micros();
+			}
+		}
 
 	}
 	/* USER CODE END 3 */
