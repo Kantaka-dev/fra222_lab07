@@ -60,16 +60,19 @@ uint64_t EncoderVel_ReadSettingTime = 0;
 uint64_t Timestamp_Encoder = 0;
 uint64_t Timestamp_Control = 0;
 
-uint8_t  OnOff = 0; //default Off
-float 	 EncoderRPM_Ref = 15;
-int32_t  PWMSpeed = 0;
+uint8_t  OnOff = 1; //default On
+float 	 EncoderRPM_Ref = 0;
+float    PWMSpeed[2] = {0};
 uint16_t PWMOut1 = 0;
 uint16_t PWMOut2 = 0;
 
-float PID_Error = 0;
-float PID_KP    = 0.01;
-//float PID_KI = 0;
-//float PID_KD = 0;
+float PID_Error[3] = {0};
+float PID_ErrorSum = 0;
+float PID_KP = 200;
+float PID_KI = 1.7;
+float PID_KD = 0;
+
+float TestVar = 0;
 
 /* USER CODE END PV */
 
@@ -154,10 +157,11 @@ int main(void)
 //		}
 
 		//Read Encoder + Simple Low-pass filter (10kHz loop)
-		if (micros() - Timestamp_Encoder >= 100)
-		{
-			Timestamp_Encoder = micros();
-			EncoderVel = (EncoderVel * 599 + EncoderVelocity_Update()) / 600.0;
+//		if (micros() - Timestamp_Encoder >= 100)
+//		{
+//			Timestamp_Encoder = micros();
+//			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
+//			EncoderVel = (EncoderVel * 599 + EncoderVelocity_Update()) / 600.0;
 
 			//check the low-pass filter delay period
 //			if (((EncoderVel - EncoderVel_SettlingCompare) > EncoderVel_SettlingCompare*SettlingPercent) ||
@@ -166,33 +170,55 @@ int main(void)
 //				EncoderVel_SettlingCompare = EncoderVel;
 //				EncoderVel_ReadSettingTime = micros();
 //			}
-			if (EncoderVel < 0.001 && EncoderVel > -0.001) {EncoderVel = 0;}
+//			if (EncoderVel < 0.001 && EncoderVel > -0.001) {EncoderVel = 0;}
 
 			//change pulse/s to RPM
-			EncoderRPM = EncoderVel *60.0 /3072.0;
-		}
+//			EncoderRPM = EncoderVel *60.0 /3072.0;
+//		}
 
-		//Controller (100Hz loop)
-		if (micros() - Timestamp_Control >= 10000)
+		//Controller (1kHz loop)
+		if (micros() - Timestamp_Control >= 1000)
 		{
+			Timestamp_Control = micros();
+
+
+			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
+			EncoderRPM = EncoderVel *60.0 /3072.0;
+
+
 			//control
-//			PID_Error = EncoderRPM_Ref - EncoderRPM;
-//
-//			PWMSpeed += PID_KP * PID_Error;
+			PID_Error[0] = EncoderRPM_Ref - EncoderRPM;
+			PID_ErrorSum += PID_Error[0];
+			//
+			//version1
+			PWMSpeed[0] = (PID_KP*PID_Error[0]) + (PID_KI*PID_ErrorSum) + (PID_KD*(PID_Error[0]-PID_Error[1]));
+			//
+			//version2
+//			TestVar = (PID_KP+PID_KI+PID_KD)*PID_Error[0] - (PID_KP+2*PID_KD)*PID_Error[1] + (PID_KD)*PID_Error[2];
+//			PWMSpeed[0] = PWMSpeed[1] + TestVar;
+			//
+			//save last 2 error values
+			PID_Error[2] = PID_Error[1];
+			PID_Error[1] = PID_Error[0];
 
 			//set speed limit
-			if (PWMSpeed > 10000) {PWMSpeed = 10000;}
-			else if (PWMSpeed < -10000) {PWMSpeed = -10000;}
+			if (PWMSpeed[0] > 10000) {
+				PWMSpeed[0] = 10000;
+			}
+			else if (PWMSpeed[0] < -10000) {
+				PWMSpeed[0] = -10000;
+			}
 			//set PWM
-			if (PWMSpeed >= 0)
+			if (PWMSpeed[0] >= 0)
 			{
-				PWMOut1 = PWMSpeed;
+				PWMOut1 = PWMSpeed[0];
 				PWMOut2 = 0;
 			}
 			else {
 				PWMOut1 = 0;
-				PWMOut2 = -PWMSpeed;
+				PWMOut2 = -PWMSpeed[0];
 			}
+			PWMSpeed[1] = PWMSpeed[0];
 			//using compare to set PWM duty cycle = PWMOut / TIM11 period(which is 10000)
 			__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, (PWMOut1 *OnOff));
 			__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, (PWMOut2 *OnOff));
