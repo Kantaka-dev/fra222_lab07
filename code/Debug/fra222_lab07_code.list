@@ -1313,7 +1313,7 @@ int main(void)
  8000f9a:	e9c1 2300 	strd	r2, r3, [r1]
 
 
-			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
+			EncoderVel = (EncoderVel * 299 + EncoderVelocity_Update()) / 300.0;
  8000f9e:	4b69      	ldr	r3, [pc, #420]	; (8001144 <main+0x21c>)
  8000fa0:	edd3 7a00 	vldr	s15, [r3]
  8000fa4:	ed9f 7a68 	vldr	s14, [pc, #416]	; 8001148 <main+0x220>
@@ -1504,8 +1504,8 @@ int main(void)
  800113c:	20000084 	.word	0x20000084
  8001140:	20000048 	.word	0x20000048
  8001144:	20000040 	.word	0x20000040
- 8001148:	42c60000 	.word	0x42c60000
- 800114c:	42c80000 	.word	0x42c80000
+ 8001148:	43958000 	.word	0x43958000
+ 800114c:	43960000 	.word	0x43960000
  8001150:	404e0000 	.word	0x404e0000
  8001154:	40a80000 	.word	0x40a80000
  8001158:	20000044 	.word	0x20000044

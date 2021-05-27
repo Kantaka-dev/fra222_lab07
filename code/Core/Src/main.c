@@ -69,7 +69,7 @@ uint16_t PWMOut2 = 0;
 float PID_Error[3] = {0};
 float PID_ErrorSum = 0;
 float PID_KP = 200;
-float PID_KI = 1.7;
+float PID_KI = 0.5;
 float PID_KD = 0;
 
 float TestVar = 0;
@@ -182,7 +182,7 @@ int main(void)
 			Timestamp_Control = micros();
 
 
-			EncoderVel = (EncoderVel * 99 + EncoderVelocity_Update()) / 100.0;
+			EncoderVel = (EncoderVel * 299 + EncoderVelocity_Update()) / 300.0;
 			EncoderRPM = EncoderVel *60.0 /3072.0;
 
 
